@@ -1,0 +1,7 @@
+spring:
+  neo4j:
+    uri: bolt://localhost:7687
+    authentication:
+      username: neo4j
+      password: telegram
+logging.level.org.springframework.data.neo4j.cypher: DEBUG  # utile en dev
