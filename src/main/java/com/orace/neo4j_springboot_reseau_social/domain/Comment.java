@@ -1,24 +1,32 @@
 package com.orace.neo4j_springboot_reseau_social.domain;
 
-import org.springframework.data.neo4j.core.schema.GeneratedValue;
-import org.springframework.data.neo4j.core.schema.Id;
-import org.springframework.data.neo4j.core.schema.Node;
-import org.springframework.data.neo4j.core.schema.Relationship;
-import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
+import org.springframework.data.neo4j.core.schema.*;
 
-import java.time.Instant;
-
-@Node("Comment")
+@Node
 public class Comment {
-    @Id
-    @GeneratedValue(UUIDStringGenerator.class)
-    private String id;
-    private String text;
-    private Instant createdAt = Instant.now();
 
-    @Relationship(type = "AUTHORED", direction = Relationship.Direction.INCOMING)
+    @Id @GeneratedValue
+    private Long id;
+
+    private String text;
+
+    @Property("createdAt")
+    private String createdAt;
+
+    @Relationship(type = "COMMENTED_BY", direction = Relationship.Direction.OUTGOING)
     private User author;
 
-    @Relationship(type = "COMMENT_ON")
-    private Post post;
+    public Comment() {}
+    public Comment(String text, User author, String createdAt) {
+        this.text = text;
+        this.author = author;
+        this.createdAt = createdAt;
+    }
+
+    // getters/setters
+    public Long getId() { return id; }
+    public String getText() { return text; }
+    public void setText(String text) { this.text = text; }
+    public User getAuthor() { return author; }
+    public void setAuthor(User author) { this.author = author; }
 }

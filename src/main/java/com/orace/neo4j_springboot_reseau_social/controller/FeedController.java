@@ -1,69 +1,56 @@
 package com.orace.neo4j_springboot_reseau_social.controller;
 
-import com.orace.neo4j_springboot_reseau_social.PostView;
-import com.orace.neo4j_springboot_reseau_social.dto.CommentDTO;
-import com.orace.neo4j_springboot_reseau_social.dto.CreatePostDTO;
-import com.orace.neo4j_springboot_reseau_social.repository.PostRepository;
-import com.orace.neo4j_springboot_reseau_social.repository.UserRepository;
-import com.orace.neo4j_springboot_reseau_social.service.InteractionService;
-import com.orace.neo4j_springboot_reseau_social.service.PostService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+
+import com.orace.neo4j_springboot_reseau_social.PostViewDTO;
+import com.orace.neo4j_springboot_reseau_social.domain.*;
+import com.orace.neo4j_springboot_reseau_social.dto.PostRequest;
+import com.orace.neo4j_springboot_reseau_social.exeception.ApiResponse;
+import com.orace.neo4j_springboot_reseau_social.service.FeedService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
-@RequestMapping("/api")
-@RequiredArgsConstructor
+@RequestMapping("/api/feed")
 public class FeedController {
-    private final PostRepository postRepo;
-    private final PostService postService;
-    private final InteractionService interactionService;
-    private final UserRepository userRepo;
 
-    @PostMapping("/posts")
-    public Map<String,String> create(@Valid @RequestBody CreatePostDTO dto) {
-        return Map.of("id", postService.create(dto));
+    private final FeedService feedService;
+
+    public FeedController(FeedService feedService) {
+        this.feedService = feedService;
     }
 
-    @GetMapping("/feed/{userId}")
-    public List<PostView> home(@PathVariable String userId,
-                               @RequestParam(defaultValue="0") long skip,
-                               @RequestParam(defaultValue="20") int limit) {
-        return postRepo.homeFeed(userId, skip, limit);
+    @PostMapping("/{userId}/posts")
+    public ResponseEntity<?> createPost(@PathVariable Long userId, @RequestBody PostRequest request) {
+        Post post = feedService.createPost(userId, request.content);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Post créé",
+                "data", post
+        ));
     }
 
-    @PostMapping("/posts/{postId}/like")
-    public void like(@PathVariable String postId, @RequestParam String userId) {
-        interactionService.like(userId, postId);
+
+    @PostMapping("/{userId}/posts/{postId}/like")
+    public ResponseEntity<ApiResponse<String>> likePost(@PathVariable Long userId, @PathVariable Long postId) {
+        feedService.likePost(postId, userId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Post liké", null));
     }
 
-    @DeleteMapping("/posts/{postId}/like")
-    public void unlike(@PathVariable String postId, @RequestParam String userId) {
-        interactionService.unlike(userId, postId);
+    @PostMapping("/{userId}/posts/{postId}/comment")
+    public ResponseEntity<ApiResponse<Comment>> commentPost(@PathVariable Long userId,
+                                                            @PathVariable Long postId,
+                                                            @RequestBody String text) {
+        Comment comment = feedService.commentPost(postId, userId, text);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Commentaire ajouté", comment));
     }
 
-    @PostMapping("/posts/{postId}/comments")
-    public Map<String,String> comment(@PathVariable String postId, @Valid @RequestBody CommentDTO dto) {
-        return Map.of("id", interactionService.comment(dto.userId(), postId, dto.text()));
-    }
-
-    @PostMapping("/users/{userId}/follow/{targetId}")
-    public void follow(@PathVariable String userId, @PathVariable String targetId) {
-        userRepo.follow(userId, targetId);
-    }
-
-    @DeleteMapping("/users/{userId}/follow/{targetId}")
-    public void unfollow(@PathVariable String userId, @PathVariable String targetId) {
-        userRepo.unfollow(userId, targetId);
-    }
-
-    @GetMapping("/users/{userId}/suggestions")
-    public List<Map<String,Object>> suggestions(@PathVariable String userId,
-                                                @RequestParam(defaultValue="10") int limit) {
-        return userRepo.suggestions(userId, limit);
+    @GetMapping("/{userId}")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getFeed(@PathVariable Long userId) {
+        List<Map<String, Object>> feed = feedService.getFeed(userId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Feed récupéré", feed));
     }
 }
-

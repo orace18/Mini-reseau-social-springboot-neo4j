@@ -16,12 +16,13 @@ public class PostService {
     @Transactional
     public String create(CreatePostDTO dto) {
         return neo4j.query("""
-      MATCH (u:User {id:$authorId})
-      CREATE (p:Post {id: randomUUID(), text:$text, createdAt: datetime()})
-      MERGE (u)-[:POSTED]->(p)
-      RETURN p.id AS id
+        MATCH (u:User {id:$authorId})
+        CREATE (p:Post {id: randomUUID(), content:$text, createdAt: datetime()})
+        MERGE (u)-[:CREATED_BY]->(p)
+        RETURN p.id AS id
     """).bindAll(Map.of("authorId", dto.authorId(), "text", dto.text()))
                 .fetch().one().map(r -> (String) r.get("id")).orElseThrow();
     }
+
 }
 
